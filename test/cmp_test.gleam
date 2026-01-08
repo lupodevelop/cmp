@@ -1,6 +1,8 @@
-import gleeunit
 import cmp
-import gleam/order as order
+import gleam/int
+import gleam/order
+import gleam/string
+import gleeunit
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -37,6 +39,30 @@ pub fn by_string_test() {
   let c = cmp.by_string(key)
   assert c(u1, u2) == order.Lt
   assert c(u2, u1) == order.Gt
+}
+
+pub fn by_generic_test() {
+  // Use `by` with `string.compare` (example integration point for `str` too)
+  let u1 = #("Alice", 30)
+  let u2 = #("Bob", 25)
+  let key = fn(u) {
+    case u {
+      #(name, _) -> name
+    }
+  }
+  let c = cmp.by(key, string.compare)
+  assert c(u1, u2) == order.Lt
+  assert c(u2, u1) == order.Gt
+
+  // Also test with `Int` comparator
+  let k2 = fn(u) {
+    case u {
+      #(_, age) -> age
+    }
+  }
+  let c2 = cmp.by(k2, int.compare)
+  assert c2(u1, u2) == order.Gt
+  assert c2(u2, u1) == order.Lt
 }
 
 pub fn by_int_test() {
