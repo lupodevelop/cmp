@@ -61,6 +61,26 @@ pub fn by(key: fn(a) -> b, cmp: fn(b, b) -> order.Order) -> Comparator(a) {
   fn(x, y) { cmp(key(x), key(y)) }
 }
 
+// Internal helper: iterate the list of comparators and return the first non-Eq
+// result, or `order.Eq` if all comparators return `Eq`.
+fn chain_go(comps: List(fn(a, a) -> order.Order), x: a, y: a) -> order.Order {
+  case comps {
+    [] -> order.Eq
+    [h, ..t] ->
+      case h(x, y) {
+        order.Eq -> chain_go(t, x, y)
+        o -> o
+      }
+  }
+}
+
+/// Chain a list of comparators lexicographically.
+/// The returned comparator applies each comparator in order and uses the
+/// first non-`Eq` result, or `Eq` if all comparators are `Eq`.
+pub fn chain(comps: List(fn(a, a) -> order.Order)) -> Comparator(a) {
+  fn(x, y) { chain_go(comps, x, y) }
+}
+
 pub fn main() -> Nil {
   io.println("Hello from cmp!")
 }
