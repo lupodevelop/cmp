@@ -114,6 +114,40 @@ pub fn chain_test() {
   assert c(a, d) == order.Lt
 }
 
+pub fn lazy_then_test() {
+  let by_name =
+    cmp.by(
+      fn(u) {
+        case u {
+          #(name, _) -> name
+        }
+      },
+      string.compare,
+    )
+  let by_age =
+    cmp.by(
+      fn(u) {
+        case u {
+          #(_, age) -> age
+        }
+      },
+      int.compare,
+    )
+
+  let c = cmp.lazy_then(by_name, fn() { by_age })
+
+  let a = #("Alice", 30)
+  let b = #("Alice", 25)
+  let d = #("Bob", 20)
+
+  // when names equal -> fallback to age
+  assert c(a, b) == order.Gt
+  assert c(b, a) == order.Lt
+
+  // when names differ -> compare by name
+  assert c(a, d) == order.Lt
+}
+
 pub fn list_compare_test() {
   let cmp_ints = cmp.list_compare(int.compare)
 
