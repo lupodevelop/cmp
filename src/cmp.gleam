@@ -123,6 +123,48 @@ pub fn chain(comps: List(fn(a, a) -> order.Order)) -> Comparator(a) {
   fn(x, y) { chain_go(comps, x, y) }
 }
 
+/// Compare two pairs (tuples of two elements) using provided comparators
+/// for the first and second element respectively.
+/// Useful for common `(a, b)` sorting patterns.
+pub fn pair(a_cmp: Comparator(a), b_cmp: Comparator(b)) -> fn(#(a, b), #(a, b)) -> order.Order {
+  fn(x, y) {
+    case x {
+      #(ax, bx) ->
+        case y {
+          #(ay, by) ->
+            case a_cmp(ax, ay) {
+              order.Eq -> b_cmp(bx, by)
+              o -> o
+            }
+        }
+    }
+  }
+}
+
+/// Compare three-element tuples lexicographically using three comparators.
+pub fn triple(
+  a_cmp: Comparator(a),
+  b_cmp: Comparator(b),
+  c_cmp: Comparator(c),
+) -> fn(#(a, b, c), #(a, b, c)) -> order.Order {
+  fn(x, y) {
+    case x {
+      #(ax, bx, cx) ->
+        case y {
+          #(ay, by, cy) ->
+            case a_cmp(ax, ay) {
+              order.Eq ->
+                case b_cmp(bx, by) {
+                  order.Eq -> c_cmp(cx, cy)
+                  o -> o
+                }
+              o -> o
+            }
+        }
+    }
+  }
+}
+
 // Helper: compare two lists lexicographically (top-level to allow recursion).
 fn list_compare_go(elem_cmp: fn(a, a) -> order.Order, xl: List(a), yl: List(a)) -> order.Order {
   case xl {

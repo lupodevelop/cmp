@@ -4,6 +4,7 @@ import gleam/option
 import gleam/order
 import gleam/string
 import gleeunit
+import gleam/float
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -121,6 +122,34 @@ pub fn list_compare_test() {
   assert cmp_ints([1], []) == order.Gt
   assert cmp_ints([1, 2], [1, 3]) == order.Lt
   assert cmp_ints([1, 2], [1, 2]) == order.Eq
+}
+
+pub fn pair_test() {
+  let a_cmp = cmp.pair(string.compare, int.compare)
+  let x = #("Alice", 30)
+  let y = #("Alice", 25)
+  let z = #("Bob", 20)
+
+  // same name -> compare age
+  assert a_cmp(x, y) == order.Gt
+  assert a_cmp(y, x) == order.Lt
+
+  // different name -> compare name
+  assert a_cmp(x, z) == order.Lt
+}
+
+pub fn triple_test() {
+  let t_cmp = cmp.triple(string.compare, int.compare, float.compare)
+  let a = #("Alice", 30, 7.5)
+  let b = #("Alice", 30, 6.0)
+  let c = #("Alice", 25, 9.0)
+
+  // first two equal -> compare third
+  assert t_cmp(a, b) == order.Gt
+  assert t_cmp(b, a) == order.Lt
+
+  // second differs
+  assert t_cmp(a, c) == order.Gt
 }
 
 pub fn natural_float_test() {
