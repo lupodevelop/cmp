@@ -123,6 +123,26 @@ pub fn chain(comps: List(fn(a, a) -> order.Order)) -> Comparator(a) {
   fn(x, y) { chain_go(comps, x, y) }
 }
 
+/// Lazy tie-breaker: evaluate `comp2_thunk` only if `comp1(x, y)` yields `Eq`.
+/// This is useful when building the fallback comparator is expensive.
+///
+/// Example:
+///
+/// ```gleam
+/// let cmp = cmp.lazy_then(by_name, fn() { by_age })
+/// ```
+pub fn lazy_then(
+  comp1: Comparator(a),
+  comp2_thunk: fn() -> Comparator(a),
+) -> Comparator(a) {
+  fn(x, y) {
+    case comp1(x, y) {
+      order.Eq -> comp2_thunk()(x, y)
+      o -> o
+    }
+  }
+}
+
 /// Compare two pairs (tuples of two elements) using provided comparators
 /// for the first and second element respectively.
 /// Useful for common `(a, b)` sorting patterns.
