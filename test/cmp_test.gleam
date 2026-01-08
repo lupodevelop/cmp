@@ -77,3 +77,21 @@ pub fn by_int_test() {
   assert c(u1, u2) == order.Gt
   assert c(u2, u1) == order.Lt
 }
+
+pub fn chain_test() {
+  let by_name = cmp.by(fn(u) { case u { # (name, _) -> name } }, string.compare)
+  let by_age = cmp.by(fn(u) { case u { # (_, age) -> age } }, int.compare)
+
+  let c = cmp.chain([by_name, by_age])
+
+  let a = #("Alice", 30)
+  let b = #("Alice", 25)
+  let d = #("Bob", 20)
+
+  // names equal -> compare ages
+  assert c(a, b) == order.Gt
+  assert c(b, a) == order.Lt
+
+  // names differ -> compare by name
+  assert c(a, d) == order.Lt
+}
