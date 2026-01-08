@@ -73,9 +73,9 @@ let comparator = cmp.chain([
 list.sort(users, by: comparator)
 ```
 
-## Integration with `str` (optional)github.com/lupodevelop/str), but you can pass [`str`](https://github.com/lupodevelop/str
+## Integration with `str` (optional)
 
-The library does **not** depend on [`str`](https://hexdocs.pm/str/), but you can pass [`str`](https://hexdocs.pm/str/) functions to the APIs for Unicode normalization and folding.
+The library does **not** depend on [`str`](https://github.com/lupodevelop/str), but you can pass [`str`](https://github.com/lupodevelop/str) functions to the APIs for Unicode normalization and folding.
 
 ### ASCII folding example
 
