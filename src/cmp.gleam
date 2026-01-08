@@ -1,46 +1,53 @@
 import gleam/io
 
-pub type Order {
-  Less
-  Equal
-  Greater
+import gleam/order as order
+import gleam/int as int
+import gleam/string as string
+
+/// A comparator for values of type `a`.
+/// Returns an `order.Order` from the stdlib `order` module.
+pub type Comparator(a) = fn(a, a) -> order.Order
+
+/// Compare two integers using the stdlib `int.compare`.
+pub fn natural_int(a: Int, b: Int) -> order.Order {
+  int.compare(a, b)
 }
 
-pub type Comparator(a) = fn(a, a) -> Order
-
-pub fn natural_int(a: Int, b: Int) -> Order {
-  case a < b {
-    True -> Less
-    False ->
-      case a > b {
-        True -> Greater
-        False -> Equal
-      }
-  }
-}
-
+/// Reverse the ordering produced by `comp`.
+/// Delegates to `order.reverse` for correctness.
 pub fn reverse(comp: Comparator(a)) -> Comparator(a) {
-  fn(x, y) {
-    case comp(x, y) {
-      Less -> Greater
-      Greater -> Less
-      Equal -> Equal
-    }
-  }
+  order.reverse(comp)
 }
 
+/// Compose two comparators: try `comp1`, if `Eq` fall back to `comp2`.
+/// The returned comparator is type-safe and total.
 pub fn then(comp1: Comparator(a), comp2: Comparator(a)) -> Comparator(a) {
   fn(x, y) {
     case comp1(x, y) {
-      Equal -> comp2(x, y)
+      order.Eq -> comp2(x, y)
       o -> o
     }
   }
 }
 
+/// Build a comparator by extracting an `Int` key from values of type `a`.
+/// Returns `order.Order` via `int.compare`.
 pub fn by_int(key: fn(a) -> Int) -> Comparator(a) {
   fn(x, y) {
-    natural_int(key(x), key(y))
+    int.compare(key(x), key(y))
+  }
+}
+
+/// Compare two strings in the natural (lexicographic) way.
+pub fn natural_string(a: String, b: String) -> order.Order {
+  string.compare(a, b)
+}
+
+/// Build a comparator by extracting a `String` key from values of type `a`.
+/// Uses the stdlib `string.compare` which returns `order.Order`.
+pub fn by_string(key: fn(a) -> String) -> Comparator(a) {
+  fn(x, y) {
+    string.compare(key(x), key(y))
   }
 }
 
