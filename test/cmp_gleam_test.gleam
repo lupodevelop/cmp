@@ -1,10 +1,10 @@
 import cmp
+import gleam/float
 import gleam/int
 import gleam/option
 import gleam/order
 import gleam/string
 import gleeunit
-import gleam/float
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -78,6 +78,33 @@ pub fn by_int_test() {
   let c = cmp.by_int(key)
   assert c(u1, u2) == order.Gt
   assert c(u2, u1) == order.Lt
+}
+
+pub fn by_string_with_test() {
+  let u1 = #("a", 1)
+  let u2 = #("b", 2)
+  let key = fn(u) {
+    case u {
+      #(name, _) -> name
+    }
+  }
+  let c = cmp.by_string_with(key, string.compare)
+  assert c(u1, u2) == order.Lt
+  assert c(u2, u1) == order.Gt
+}
+
+pub fn by_normalized_string_test() {
+  let u1 = #("A", 1)
+  let u2 = #("a", 2)
+  let key = fn(u) {
+    case u {
+      #(name, _) -> name
+    }
+  }
+  // Normalizer that maps any string to the same value -> equal
+  let normalize = fn(_s) { "x" }
+  let c = cmp.by_normalized_string(key, normalize, string.compare)
+  assert c(u1, u2) == order.Eq
 }
 
 pub fn chain_test() {
