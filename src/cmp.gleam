@@ -1,9 +1,8 @@
-
+import gleam/float
 import gleam/int
 import gleam/option
 import gleam/order
 import gleam/string
-import gleam/float
 
 /// A comparator for values of type `a`.
 /// Returns an `order.Order` from the stdlib `order` module.
@@ -167,7 +166,10 @@ pub fn lazy_then(
 /// Compare two pairs (tuples of two elements) using provided comparators
 /// for the first and second element respectively.
 /// Useful for common `(a, b)` sorting patterns.
-pub fn pair(a_cmp: Comparator(a), b_cmp: Comparator(b)) -> fn(#(a, b), #(a, b)) -> order.Order {
+pub fn pair(
+  a_cmp: Comparator(a),
+  b_cmp: Comparator(b),
+) -> fn(#(a, b), #(a, b)) -> order.Order {
   fn(x, y) {
     case x {
       #(ax, bx) ->
@@ -207,7 +209,11 @@ pub fn triple(
 }
 
 // Helper: compare two lists lexicographically (top-level to allow recursion).
-fn list_compare_go(elem_cmp: fn(a, a) -> order.Order, xl: List(a), yl: List(a)) -> order.Order {
+fn list_compare_go(
+  elem_cmp: fn(a, a) -> order.Order,
+  xl: List(a),
+  yl: List(a),
+) -> order.Order {
   case xl {
     [] ->
       case yl {
