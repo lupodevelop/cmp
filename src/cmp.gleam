@@ -1,4 +1,3 @@
-import gleam/io
 
 import gleam/int
 import gleam/option
@@ -71,6 +70,28 @@ pub fn by_float(key: fn(a) -> Float) -> Comparator(a) {
 /// ```
 pub fn by(key: fn(a) -> b, cmp: fn(b, b) -> order.Order) -> Comparator(a) {
   fn(x, y) { cmp(key(x), key(y)) }
+}
+
+/// Sugar for string comparators: pass a string key extractor and a string
+/// comparator (e.g. `string.compare` or `str.compare`). This helper does not
+/// import or depend on `str`; it only accepts a comparator function as an
+/// argument so the user may pass `str.compare` if they use the `str` package.
+pub fn by_string_with(
+  key: fn(a) -> String,
+  cmp: fn(String, String) -> order.Order,
+) -> Comparator(a) {
+  fn(x, y) { cmp(key(x), key(y)) }
+}
+
+/// Normalize keys with `normalize` before applying `cmp`. Useful if you want
+/// to apply folding/normalization (e.g. ASCII folding) prior to comparing.
+/// `normalize` can be any function (for example from `str/extra`).
+pub fn by_normalized_string(
+  key: fn(a) -> String,
+  normalize: fn(String) -> String,
+  cmp: fn(String, String) -> order.Order,
+) -> Comparator(a) {
+  fn(x, y) { cmp(normalize(key(x)), normalize(key(y))) }
 }
 
 /// Build a comparator for `Option(a)` given:
@@ -209,8 +230,4 @@ fn list_compare_go(elem_cmp: fn(a, a) -> order.Order, xl: List(a), yl: List(a)) 
 /// Empty list is considered less than a non-empty list.
 pub fn list_compare(elem_cmp: fn(a, a) -> order.Order) -> Comparator(List(a)) {
   fn(xs, ys) { list_compare_go(elem_cmp, xs, ys) }
-}
-
-pub fn main() -> Nil {
-  io.println("Hello from cmp!")
 }
