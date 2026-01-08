@@ -10,14 +10,6 @@ pub fn main() -> Nil {
   gleeunit.main()
 }
 
-// gleeunit test functions end in `_test`
-pub fn hello_world_test() {
-  let name = "Joe"
-  let greeting = "Hello, " <> name <> "!"
-
-  assert greeting == "Hello, Joe!"
-}
-
 pub fn natural_int_test() {
   assert cmp.natural_int(1, 2) == order.Lt
   assert cmp.natural_int(2, 1) == order.Gt
