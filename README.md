@@ -4,29 +4,36 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/cmp_gleam/)
 [![CI](https://github.com/lupodevelop/cmp/workflows/test/badge.svg)](https://github.com/lupodevelop/cmp/actions)
 
-cmp_gleam: explicit comparator helpers for Gleam
+A tiny, focused library for building small, composable comparators in Gleam. It intentionally avoids magic (no derives, no hidden behavior) so that comparison logic remains explicit, easy to test and easy to reason about.
 
-cmp_gleam is a tiny, focused library for building small, composable comparators in Gleam. It intentionally avoids magic (no derives, no hidden behavior) so that comparison logic remains explicit, easy to test and easy to reason about.
+## Features
 
-Key goals:
+- ✨ Small and predictable API
+- 🔧 Composable building blocks for lexicographic and tie-breaker ordering
+- 🎯 Optional normalization/folding integration (e.g., with [`str`](https://github.com/lupodevelop/str)) without runtime dependencies
+- 🔒 Type-safe and total functions (no panics, no unsafe code)
 
-- Keep the API small and predictable
-- Provide composable building blocks for lexicographic and tie-breaker ordering
-- Allow optional normalization/folding (for example using the `str` library) without adding runtime dependencies
+> **Note**: [`str` documentation](https://hexdocs.pm/str/) is available on HexDocs.
 
-Why this approach?
+## Why this approach?
 
-`cmp` favors explicitness over implicit derivation. By making comparators first-class and composable you get predictable behaviour, easier testing, and straightforward integration with normalization libraries when you need to handle real-world Unicode data.
+The library favors explicitness over implicit derivation. By making comparators first-class and composable you get predictable behaviour, easier testing, and straightforward integration with normalization libraries when you need to handle real-world Unicode data.
 
-Install
+## Installation
 
 ```sh
 gleam add cmp_gleam
 ```
 
-Quick examples 🔧
+Then import the `cmp` module in your code:
 
-1. Sort integers
+```gleam
+import cmp
+```
+
+## Quick examples
+
+### 1. Sort integers
 
 ```gleam
 import cmp
@@ -37,7 +44,7 @@ pub fn sort_ints(xs: List(Int)) -> List(Int) {
 }
 ```
 
-2. Sort records by a string field (contramap)
+### 2. Sort records by a field (contramap pattern)
 
 ```gleam
 import cmp
@@ -54,58 +61,65 @@ pub fn sort_by_name(users: List(User)) -> List(User) {
 }
 ```
 
-3. Lexicographic ordering / tie-breakers (chain / then / lazy_then)
+### 3. Lexicographic ordering (chain / then / lazy_then)
+
+Combine multiple comparators to sort by primary key, then by secondary key:
 
 ```gleam
-let cmp = cmp.chain([
+let comparator = cmp.chain([
   cmp.by(fn(u) { case u { User(name, _) -> name } }, string.compare),
   cmp.by(fn(u) { case u { User(_, age) -> age } }, cmp.natural_int)
 ])
-list.sort(users, by: cmp)
+list.sort(users, by: comparator)
 ```
 
-4. Integrating with `str` for normalization (e.g. ASCII-fold)
+## Integration with `str` (optional)github.com/lupodevelop/str), but you can pass [`str`](https://github.com/lupodevelop/str
 
-`str` is optional — `cmp` does not import it. You can pass `str` functions to `cmp` APIs such as `by_normalized_string` to fold/normalize before comparing:
+The library does **not** depend on [`str`](https://hexdocs.pm/str/), but you can pass [`str`](https://hexdocs.pm/str/) functions to the APIs for Unicode normalization and folding.
+
+### ASCII folding example
 
 ```gleam
 import cmp
 import gleam/list
 import gleam/string
-import str.extra
+import str/extra
 
 pub fn sort_by_name_ascii_fold(users: List(User)) -> List(User) {
   let normalize = str.extra.ascii_fold
-  let cmp_name = cmp.by_normalized_string(fn(u) { case u { User(name, _) -> name } }, normalize, string.compare)
-  list.sort(users, by: cmp_name)
+  let comparator = cmp.by_normalized_string(
+    fn(u) { case u { User(name, _) -> name } },
+    normalize,
+    string.compare
+  )
+  list.sort(users, by: comparator)
 }
 ```
 
-You can also combine normalization steps (for example: fold + lowercase):
+You can also combine normalization steps:
 
 ```gleam
 let normalize = fn(s) { s |> str.extra.ascii_fold |> string.lowercase }
 ```
 
-5. Using metrics (similarity/distance) to order items (advanced example)
+### Using similarity metrics (advanced)
 
 ⚠️ **Warning**: similarity/distance metrics don't guarantee transitivity (a < b and b < c doesn't always imply a < c). If you need a total order, sort by the metric value itself rather than using it directly as a comparator.
+
+**Not recommended** (violates transitivity):
 
 ```gleam
 import gleam/order
 
-// Example: sort by similarity to a reference string (careful: not a total order!)
 let similarity_cmp = fn(a, b) {
   let s = str.similarity(a, b)
   case s > 0.8 { True -> order.Lt False -> order.Gt }
 }
-let cmp_sim = cmp.by(fn(u) { case u { User(name, _) -> name } }, similarity_cmp)
 ```
 
-Better approach for metrics:
+**Better approach** (compute metric, then sort by it):
 
 ```gleam
-// Compute similarity as Float, then sort by that value
 let reference = "Alice"
 let with_similarity = list.map(users, fn(u) {
   let sim = str.similarity(u.name, reference)
@@ -114,37 +128,50 @@ let with_similarity = list.map(users, fn(u) {
 let sorted = list.sort(with_similarity, by: cmp.by(fn(pair) { pair.1 }, float.compare))
 ```
 
-Unicode & normalization notes ⚠️
+## Unicode & normalization notes
 
 - `string.compare` compares strings as-is; composed vs decomposed characters may behave differently if not normalized.
 - For user-facing sorting (names, titles), it is recommended to **normalize** (NFC/NFD) or apply folding (remove accents) before comparing.
-- `str` provides useful primitives (`str.extra.ascii_fold`, `str.core.normalize_whitespace`, etc.) which you can pass directly to `cmp`.
+- [`str`](https://github.com/lupodevelop/str) provides useful primitives (`str.extra.ascii_fold`, `str.core.normalize_whitespace`, etc.) which you can pass directly to `cmp` functions.
 
-Performance tip: for large lists, precompute normalized keys
+### Performance tip: precompute normalized keys
 
 When sorting large lists by normalized strings, calling `normalize` on every comparison is expensive. Use the decorate-sort-undecorate pattern:
 
 ```gleam
 import gleam/list
 
-// Precompute normalized keys once
+// 1. Decorate: precompute normalized keys once
 let decorated = list.map(users, fn(u) {
   let normalized_name = str.extra.ascii_fold(u.name)
   #(u, normalized_name)
 })
 
-// Sort by the precomputed key
+// 2. Sort by the precomputed key
 let sorted_decorated = list.sort(decorated, by: cmp.by(fn(pair) { pair.1 }, string.compare))
 
-// Extract the original values
+// 3. Undecorate: extract the original values
 let sorted_users = list.map(sorted_decorated, fn(pair) { pair.0 })
 ```
 
-Further documentation and examples will be published on <https://hexdocs.pm/cmp_gleam>.
+## API overview
+
+The library exports a single module `cmp` with the following main functions:
+
+- **Basic comparators**: `natural_int`, `natural_string`, `natural_float`
+- **Contramap helpers**: `by`, `by_int`, `by_string`, `by_float`, `by_string_with`, `by_normalized_string`
+- **Composition**: `then`, `chain`, `lazy_then`, `reverse`
+- **Containers**: `option`, `list_compare`, `pair`, `triple`
+
+See the [full API documentation](https://hexdocs.pm/cmp_gleam/) for details.
 
 ## Development
 
 ```sh
-gleam run   # Run the project
 gleam test  # Run the tests
+gleam build # Build the project
 ```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
