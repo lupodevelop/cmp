@@ -15,7 +15,15 @@ pub fn natural_int(a: Int, b: Int) -> order.Order {
 }
 
 /// Reverse the ordering produced by `comp`.
-/// Delegates to `order.reverse` for correctness.
+/// `Lt` becomes `Gt`, `Gt` becomes `Lt`, `Eq` stays `Eq`.
+/// Delegates to `order.reverse` from stdlib.
+///
+/// Example:
+///
+/// ```gleam
+/// let desc = cmp.reverse(cmp.by_int(fn(u) { u.age }))
+/// list.sort(users, by: desc)
+/// ```
 pub fn reverse(comp: Comparator(a)) -> Comparator(a) {
   order.reverse(comp)
 }

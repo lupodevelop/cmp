@@ -88,15 +88,24 @@ pub fn by_string_with_test() {
 pub fn by_normalized_string_test() {
   let u1 = #("A", 1)
   let u2 = #("a", 2)
+  let u3 = #("B", 3)
   let key = fn(u) {
     case u {
       #(name, _) -> name
     }
   }
-  // Normalizer that maps any string to the same value -> equal
-  let normalize = fn(_s) { "x" }
-  let c = cmp.by_normalized_string(key, normalize, string.compare)
+  // Normalizer that folds to lowercase: "A" == "a" -> Eq
+  let to_lower = string.lowercase
+  let c = cmp.by_normalized_string(key, to_lower, string.compare)
   assert c(u1, u2) == order.Eq
+
+  // Without normalization "A" < "a" (uppercase < lowercase in unicode),
+  // but after lowercasing "a" == "a" -> Eq; confirms normalization changes result
+  assert string.compare("A", "a") != order.Eq
+
+  // Normalization still orders different values correctly: "a" < "b"
+  assert c(u1, u3) == order.Lt
+  assert c(u3, u1) == order.Gt
 }
 
 pub fn chain_test() {
@@ -203,6 +212,33 @@ pub fn triple_test() {
 
   // second differs
   assert t_cmp(a, c) == order.Gt
+}
+
+pub fn reverse_test() {
+  let asc = cmp.by_int(fn(u) {
+    case u {
+      #(_, age) -> age
+    }
+  })
+  let desc = cmp.reverse(asc)
+
+  let u1 = #("Alice", 30)
+  let u2 = #("Bob", 25)
+
+  // ascending: 30 > 25
+  assert asc(u1, u2) == order.Gt
+  // reversed: 30 < 25
+  assert desc(u1, u2) == order.Lt
+  assert desc(u2, u1) == order.Gt
+
+  // equal values stay Eq after reverse
+  assert desc(u1, u1) == order.Eq
+}
+
+pub fn chain_empty_test() {
+  let c = cmp.chain([])
+  assert c(1, 2) == order.Eq
+  assert c(42, 42) == order.Eq
 }
 
 pub fn natural_float_test() {
